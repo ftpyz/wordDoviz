@@ -2,11 +2,34 @@
 use Teknomavi\Tcmb\Doviz;
 class wordDoviz{
     private $desteklenenParaBirimleri=array("USD","EUR","GBP");
+    private $anaParabirimleri=array("TL");
     public function __construct(){
         add_action("admin_menu",array($this,"menuIslemleri"));
         add_action("admin_init",array($this,"ayarAlanlariniOlustur"));
+        add_shortcode('woo_doviz',array($this,"wooDovizShortCode"),1);
     }
-
+    public function wooDovizShortCode($att,$content,$shortcode_tag) { 
+        $parabirimleri=$this->desteklenenParaBirimleri;
+        $this->dovizBilgileriniOlustur("TCMB");
+        $dovizBilgileri=wp_cache_get("wooDovizBilgileri");
+        if($att["birimler"]){
+            $parabirimleri=explode(",",$att["birimler"]);
+        }
+        $options = get_option('worddoviz_settings');
+        $message="<table><tr><td><strong>Döviz</strong></td><td><strong>Alış</strong></td><td><strong>Satış</strong></td></tr><tbody>";
+        foreach($parabirimleri as $pr){
+            $message."<tr>";
+            $message.="<td>".$dovizBilgileri["dovizler"][$pr]["birim"]."</td>";
+            $message.="<td>".$dovizBilgileri["dovizler"][$pr]["alis"]." ".$options["ana_doviz"]."</td>";
+            $message.="<td>".$dovizBilgileri["dovizler"][$pr]["satis"]." ".$options["ana_doviz"]."</td>";
+            $message.="</tr>";
+        }
+         $message.="</tbody></table>";
+        $message.="<p>".__("Döviz kurları ".$dovizBilgileri["kaynak"]." kaynağından <b>" . date('d.m.Y H:i:s', $dovizBilgileri['guncellenme_zamani']) . "</b> tarihinde güncellendi.", "woodoviz")."</p>";
+  
+        return $message;
+    } 
+ 
     public function menuIslemleri(){
          add_submenu_page(
             'tools.php', 
@@ -43,7 +66,7 @@ class wordDoviz{
         
         ?>
         <select name='worddoviz_settings[ana_doviz]'>
-            <?php foreach($this->desteklenenParaBirimleri as $doviz):?>
+            <?php foreach($this->anaParabirimleri as $doviz):?>
                 <option value='<?php echo $doviz;?>' <?php @selected($options['ana_doviz'], $doviz); ?>><?php echo $doviz?></option>
             <?php endforeach;?>
         </select>
@@ -55,7 +78,7 @@ class wordDoviz{
         $dovizBilgileri=wp_cache_get("wooDovizBilgileri");
         
         ?>
-        <p><?php _e("Döviz kurları ".$dovizBilgileri["kaynak"]." kaynağından <b>" . date('d.m.Y H:i:s', $dovizBilgileri['guncellenme_zamani']) . "</b> tarihinde güncellendi.", "iyziposplus");?></p>
+        <p><?php _e("Döviz kurları ".$dovizBilgileri["kaynak"]." kaynağından <b>" . date('d.m.Y H:i:s', $dovizBilgileri['guncellenme_zamani']) . "</b> tarihinde güncellendi.", "woodoviz");?></p>
                         <table class="wc_gateways widefat">
                             <thead>
                                 <tr>
@@ -89,6 +112,7 @@ class wordDoviz{
         foreach($this->desteklenenParaBirimleri as $dovizBirimleri){
             $dovizBilgileri["dovizler"][$dovizBirimleri]["alis"]=$doviz->kurAlis($dovizBirimleri);
             $dovizBilgileri["dovizler"][$dovizBirimleri]["satis"]=$doviz->kurSatis($dovizBirimleri);
+            $dovizBilgileri["dovizler"][$dovizBirimleri]["birim"]=$dovizBirimleri;
         }
         // cache kontrolu yapılmalı
         wp_cache_set("wooDovizBilgileri",$dovizBilgileri);
