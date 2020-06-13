@@ -1,0 +1,1 @@
+Wordpress için Döviz kurlarını shortcode ve widget olarak gösteren eklenti
